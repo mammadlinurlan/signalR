@@ -1,0 +1,124 @@
+﻿@model List<AppUser>
+@{
+    ViewData["Title"] = "Chat";
+}
+<style>
+    .online {
+        background-color: green;
+    }
+
+    .offline {
+        background-color: dimgrey;
+    }
+</style>
+
+<h1>Chat</h1>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="container">
+
+                <div class="row">&nbsp;</div>
+                <div class="row">
+                    <div class="col-2">User</div>
+                    <div class="col-4"><input type="text" id="userInput" /></div>
+                </div>
+                <div class="row">
+                    <div class="col-2">Message</div>
+                    <div class="col-4"><input type="text" id="messageInput" /></div>
+                </div>
+                <div class="row">&nbsp;</div>
+                <div class="row">
+                    <div class="col-6">
+                        <input type="button" id="sendButton" value="Send Message" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <hr />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6">
+                    <ul id="messagesList"></ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <ul class="list-group">
+                @foreach (var user in Model)
+                {
+                    <li id="@user.Id" class="list-group-item"> <span class="@(user.ConnectionId==null?"offline":"online")" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span> <a id="sendPrivate" asp-action="PrivateChat" asp-route-id="@user.Id   ">Send private</a> @user.Fullname</li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        var connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
+        connection.start();
+
+        console.log(connection)
+
+        $("#sendButton").click(function () {
+            var message = $("#messageInput").val();
+            var name = $("#userInput").val();
+            connection.invoke("SendMessage", name, message);
+        })
+
+        connection.on("ReceiveMessage", function (name, message, date) {
+            alert(`${name} says : ${message} ${date}`)
+
+        })
+
+        $("#sendPrivate").click(function () {
+            var message = $("#messageInput").val();
+            var name = $("#userInput").val();
+            var userid = document.getElementById(id);
+
+            connection.invoke("PrivateChat", name, message);
+        })
+
+        connection.on("PrivateMessage",function(){
+            var message = $("#messageInput").val();
+            var name = $("#userInput").val();
+            alert(`${name} says : ${message}`)
+
+
+        })
+
+       
+
+        connection.on("UserConnected", function (id) {
+
+            console.log('connected')
+
+            var userid = document.getElementById(id);
+
+            $(userid).find("span").removeClass("offline")
+
+            $(userid).find("span").addClass("online")
+
+        })
+
+        connection.on("UserDisconnected", function (id) {
+            console.log('disconnected')
+            var userid = document.getElementById(id);
+
+            $(userid).find("span").removeClass("online")
+
+            $(userid).find("span").addClass("offline")
+
+        })
+
+
+
+    </script>
+
+      
+
+}
